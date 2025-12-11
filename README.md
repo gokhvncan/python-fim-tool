@@ -12,7 +12,7 @@ A lightweight, custom File Integrity Monitor (FIM) written in Python. It detects
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/KULLANICI_ADIN/REPO_ISMI.git](https://github.com/gokhvncan/python-fim-tool)
+   git clone [https://github.com/gokhvncan/python-fim-tool.git](https://github.com/gokhvncan/python-fim-tool)
    cd python-fim-tool
 
 2. **Install dependencies:**
