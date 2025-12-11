@@ -14,3 +14,21 @@ A lightweight, custom File Integrity Monitor (FIM) written in Python. It detects
    ```bash
    git clone [https://github.com/KULLANICI_ADIN/REPO_ISMI.git](https://github.com/gokhvncan/python-fim-tool)
    cd python-fim-tool
+
+2. **Install dependencies:**
+   
+Bash
+pip install -r requirements.txt
+
+Configuration: Open the python script and update the following placeholders with your credentials:
+
+EMAIL_SENDER
+EMAIL_PASSWORD (App Password)
+VIRUSTOTAL_API_KEY
+
+VIRUSTOTAL_API_KEY
+
+Run the tool:
+
+Bash
+python fim_tool.py
