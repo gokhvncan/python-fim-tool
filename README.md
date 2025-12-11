@@ -1,36 +1,51 @@
-🛡️ FIM Ultimate - Python File Integrity Monitor
+# 🛡️ FIM Ultimate - Python File Integrity Monitor
 
-A lightweight, custom File Integrity Monitor (FIM) written in Python. It detects unauthorized file changes and integrates with **VirusTotal API** for threat intelligence.
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-## 🚀 Features
-- **Real-time Integrity Checks:** Calculates SHA-256 hashes to detect modifications.
-- **VirusTotal Integration:** Automatically scans modified files against VirusTotal database.
-- **Email Alerts:** Sends instant SMTP notifications for critical alerts.
-- **Baseline Management:** Creates and manages multiple security baselines.
+**FIM Ultimate**, Python ile yazılmış hafif ve güçlü bir Dosya Bütünlük İzleyicisidir (File Integrity Monitor). Sisteminizdeki yetkisiz dosya değişikliklerini algılar, **VirusTotal API** ile tehdit istihbaratı sağlar ve anlık e-posta bildirimleri gönderir.
 
-## 🛠️ Installation & Usage
+## 🚀 Özellikler (Features)
+- **🔍 Gerçek Zamanlı Bütünlük Kontrolü:** Değişiklikleri algılamak için SHA-256 hash algoritması kullanır.
+- **🦠 VirusTotal Entegrasyonu:** Değiştirilen dosyaların hash değerlerini otomatik olarak VirusTotal veritabanında tarar.
+- **📧 E-posta Bildirimleri:** Kritik durumlarda SMTP üzerinden anlık uyarı gönderir.
+- **📂 Baseline Yönetimi:** Güvenli durum (baseline) oluşturur ve sistemi buna göre kıyaslar.
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/gokhvncan/python-fim-tool.git](https://github.com/gokhvncan/python-fim-tool.git)
-   cd python-fim-tool
-Install dependencies:
+## 🛠️ Kurulum ve Kullanım (Installation & Usage)
 
-**Bash**
+### 1. Projeyi İndirin (Clone)
+Terminali açın ve aşağıdaki komutu girin:
+
+```bash
+git clone [https://github.com/gokhvncan/python-fim-tool.git](https://github.com/gokhvncan/python-fim-tool.git)
+cd python-fim-tool
+2. Gerekli Kütüphaneleri Yükleyin
+Bash
 
 pip install -r requirements.txt
-Configuration: Open the python script and update the following placeholders with your credentials:
+3. Konfigürasyon (Configuration)
+fim_tool.py dosyasını herhangi bir metin editörü ile açın ve aşağıdaki alanları kendi bilgilerinizle doldurun:
 
-EMAIL_SENDER
+EMAIL_SENDER: Gönderici Gmail adresi.
 
-EMAIL_PASSWORD (App Password)
+EMAIL_PASSWORD: Google hesabınızdan alacağınız Uygulama Şifresi (App Password).
 
-EMAIL_RECEIVER
+EMAIL_RECEIVER: Bildirimlerin gideceği e-posta adresi.
 
-VIRUSTOTAL_API_KEY
+VIRUSTOTAL_API_KEY: VirusTotal'den alacağınız ücretsiz API anahtarı.
 
-Run the tool:
-
-**Bash**
+4. Aracı Çalıştırın
+Bash
 
 python fim_tool.py
+📂 Proje Yapısı
+Plaintext
+
+python-fim-tool/
+├── baselines/          # Oluşturulan hash veritabanları
+├── fim_tool.py         # Ana yazılım dosyası
+├── requirements.txt    # Gerekli kütüphaneler
+├── security_events.log # Log kayıtları
+└── README.md           # Dokümantasyon
+⚠️ Yasal Uyarı (Disclaimer)
+Bu araç eğitim ve savunma (Blue Team) amaçlı geliştirilmiştir.
