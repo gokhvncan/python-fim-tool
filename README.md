@@ -1,4 +1,4 @@
-# 🛡️ FIM Ultimate - Python File Integrity Monitor
+🛡️ FIM Ultimate - Python File Integrity Monitor
 
 A lightweight, custom File Integrity Monitor (FIM) written in Python. It detects unauthorized file changes and integrates with **VirusTotal API** for threat intelligence.
 
@@ -12,23 +12,25 @@ A lightweight, custom File Integrity Monitor (FIM) written in Python. It detects
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/gokhvncan/python-fim-tool.git](https://github.com/gokhvncan/python-fim-tool)
+   git clone [https://github.com/gokhvncan/python-fim-tool.git](https://github.com/gokhvncan/python-fim-tool.git)
    cd python-fim-tool
+Install dependencies:
 
-2. **Install dependencies:**
-   
-Bash
+**Bash**
+
 pip install -r requirements.txt
-
 Configuration: Open the python script and update the following placeholders with your credentials:
 
 EMAIL_SENDER
+
 EMAIL_PASSWORD (App Password)
-VIRUSTOTAL_API_KEY
+
+EMAIL_RECEIVER
 
 VIRUSTOTAL_API_KEY
 
 Run the tool:
 
-Bash
+**Bash**
+
 python fim_tool.py
