@@ -1,50 +1,104 @@
-# FIM Ultimate - Red Team Edition
+# FIM Ultimate – Red Team Edition
 
-**FIM Ultimate** is a lightweight and robust File Integrity Monitor (FIM) written in Python.
+**FIM Ultimate** is a lightweight File Integrity Monitoring (FIM) tool written in Python. It was developed as a lab and learning project focusing on file integrity, alerting, and basic network-level visibility.
 
- **Red Team / NDR Update:** Unlike traditional FIM tools, this version includes **Network Detection & Response (NDR) Evasion** capabilities. It simulates legitimate browser traffic when reporting logs to bypass anomaly detection systems and firewalls.
+This project is **not intended as a production-ready security product**, but rather as a proof-of-concept for Red Team / Blue Team exercises and personal skill development.
 
-##  Features
+---
 
-- ** Real-time Integrity Checks:** Uses SHA-256 hashing algorithms to detect unauthorized file changes immediately.
-- ** NDR Evasion / Stealth Reporting:**
-  - Uses **User-Agent Rotation** (Spoofing Chrome, Firefox, Edge) to mimic real users.
-  - Simulates legitimate HTTP traffic to bypass firewall/NDR rules based on python-requests headers.
-- ** VirusTotal Integration:** Automatically scans modified file hashes against the VirusTotal database for malware detection.
-- ** Email Alerts:** Sends immediate SMTP notifications when a critical security event occurs.
-- ** Baseline Management:** Creates secure baselines (snapshots) and compares the system state against them.
+## Overview
 
-## 🛠️ Installation & Usage
+Traditional FIM tools focus only on filesystem changes. This project extends that idea by adding **optional network reporting logic** to simulate how integrity events might be exfiltrated in a real-world scenario.
+
+For Red Team simulations, the tool includes simple techniques to make outbound traffic resemble normal browser activity. These features are intentionally basic and meant for controlled lab environments.
+
+---
+
+## Features
+
+* **File Integrity Monitoring**
+  Detects **new**, **modified**, and **deleted** files using SHA-256 hashing.
+
+* **Baseline Management**
+  Creates and stores filesystem snapshots (baselines) and compares future states against them.
+
+* **Stealth Log Reporting (Lab Use)**
+
+  * Basic User-Agent rotation (Chrome / Firefox / Edge)
+  * Sends HTTP-based alerts that resemble normal browser traffic
+
+* **VirusTotal Integration (Optional)**
+  Queries file hashes against VirusTotal to check whether modified files are known malware.
+
+* **Email Alerts**
+  Sends SMTP notifications when integrity violations are detected.
+
+* **Event Logging**
+  All security-relevant actions are written to a local log file.
+
+---
+
+## Installation & Usage
 
 ### 1. Clone the Repository
-Open your terminal and run the following commands:
+
 ```bash
-git clone [https://github.com/gokhvncan/python-fim-tool.git](https://github.com/gokhvncan/python-fim-tool.git)
+git clone https://github.com/gokhvncan/python-fim-tool.git
 cd python-fim-tool
-2. Install Dependencies
-Install the required Python libraries:
+```
 
-Bash
+### 2. Install Dependencies
+
+```bash
 pip install -r requirements.txt
-3. Configuration
-Open fim_tool.py in any text editor and update the following placeholders with your credentials:
+```
 
-EMAIL_SENDER / EMAIL_PASSWORD (For alerts)
+### 3. Configuration
 
-VIRUSTOTAL_API_KEY (For threat intelligence)
+Edit `fim_tool.py` and update the following values if you want to enable optional features:
 
-4. Run the Tool
-Bash
+* `EMAIL_SENDER` / `EMAIL_PASSWORD` – SMTP alerting
+* `VIRUSTOTAL_API_KEY` – Threat intelligence lookups
+
+All features work independently; leaving placeholders unchanged will safely disable them.
+
+### 4. Run the Tool
+
+```bash
 python fim_tool.py
-📂 Project Structure
-Plaintext
-python-fim-tool/
-├── baselines/          # Stored hash databases (Baselines)
-├── fim_tool.py         # Main script (Stealth Module Included)
-├── requirements.txt    # Python dependencies
-├── security_events.log # Security event logs
-└── README.md           # Project documentation
-⚠️ Legal Disclaimer
-This tool is developed for educational purposes, Red Team simulations, and defensive (Blue Team) testing only. The developer is not responsible for any misuse of this tool.
+```
 
-Developed by Gökhan Can
+---
+
+## Project Structure
+
+```text
+python-fim-tool/
+├── baselines/          # Stored hash databases
+├── fim_tool.py         # Main script
+├── requirements.txt    # Python dependencies
+├── security_events.log # Local event logs
+└── README.md           # Documentation
+```
+
+---
+
+## Use Cases
+
+* Red Team lab simulations
+* Blue Team integrity monitoring practice
+* SOC / DFIR learning environments
+* Python security tooling practice
+
+---
+
+## Legal Disclaimer
+
+This tool is provided **for educational and testing purposes only**.
+It should be used **only in environments you own or have explicit permission to test**.
+
+The author takes no responsibility for misuse or damage caused by this software.
+
+---
+
+Developed by **Gökhan Can**
