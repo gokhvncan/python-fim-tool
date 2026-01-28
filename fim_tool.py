@@ -10,19 +10,19 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
-# --- CONFIG ---
+# config 
 BASELINES_DIR = "baselines"
 LOG_FILE = "security_events.log"
 
-# Email Config (Leave placeholders if not testing email)
+# email Config (Leave placeholders if not testing email)
 EMAIL_SENDER = "YOUR_EMAIL_HERE"
 EMAIL_PASSWORD = "YOUR_APP_PASSWORD_HERE"
 EMAIL_RECEIVER = "RECEIVER_EMAIL_HERE"
 
-# Threat Intel
+# threat Intel
 VIRUSTOTAL_API_KEY = "YOUR_VIRUSTOTAL_API_KEY_HERE"
 
-# C2 Server for Exfiltration (Demo: Localhost)
+# c2 Server for Exfiltration, Localhost
 C2_SERVER_URL = "http://127.0.0.1:8080/log_collector"
 
 # CLI Colors
@@ -44,10 +44,10 @@ def log_event(message):
     with open(LOG_FILE, "a") as f:
         f.write(f"[{timestamp}] {message}\n")
 
-# --- STEALTH MODULE (NDR EVASION) ---
+# UA rotation (basic evasion)
+# todo: improve later
 def get_stealth_headers():
-    # Rotates User-Agents to mimic legitimate browser traffic
-    # Bypasses basic anomaly detection rules based on 'python-requests'
+  
     user_agents = [
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0",
@@ -61,12 +61,12 @@ def get_stealth_headers():
         'Connection': 'keep-alive'
     }
     
-    # Add VT Key only if it's set
+    # VT key 
     if "YOUR_" not in VIRUSTOTAL_API_KEY:
         headers["x-apikey"] = VIRUSTOTAL_API_KEY
         
     return headers
-
+# quick lab hack, not production
 def send_stealth_report_to_c2(message):
     # Mimics a browser posting data to a C2 server
     headers = get_stealth_headers()
@@ -82,7 +82,7 @@ def send_stealth_report_to_c2(message):
         # Silent fail is intended for stealth tools
         pass
 
-# --- ALERTS ---
+# alerts
 def send_email_alert(message):
     if "YOUR_" in EMAIL_PASSWORD: return 
 
@@ -108,7 +108,7 @@ def check_virustotal(file_hash):
     if "YOUR_" in VIRUSTOTAL_API_KEY: return None
 
     url = f"https://www.virustotal.com/api/v3/files/{file_hash}"
-    # Use stealth headers to avoid being blocked by VT bot protection
+    # Use stealth headers to avoid being blocked by Vt bot prtctn.
     headers = get_stealth_headers()
     
     try:
@@ -122,7 +122,7 @@ def check_virustotal(file_hash):
         return None
     return None
 
-# --- CORE FUNCTIONS ---
+#core func.
 def calculate_file_hash(filepath):
     sha256_hash = hashlib.sha256()
     try:
@@ -191,12 +191,12 @@ def monitor_integrity():
     current_files = []
     issues = False
     
-    # Helper to handle alerts
+    # handle alerts
     def trigger(path, alert_type, f_hash=None):
         vt_info = ""
         vt_score = 0
         
-        # VirusTotal Lookup
+        #VirusTotal
         if f_hash and "YOUR_" not in VIRUSTOTAL_API_KEY:
             print(f"{Colors.YELLOW}    [>] Querying VirusTotal...{Colors.RESET}", end="\r")
             vt_score = check_virustotal(f_hash)
@@ -212,7 +212,7 @@ def monitor_integrity():
         color = Colors.RED + Colors.BOLD if (vt_score and vt_score > 0) else Colors.RED
         print(f"{color}[!!!] {msg}{Colors.RESET}")
         
-        # SHOWCASE: Print the Spoofed Header for the Interview
+        # debug output
         ua = get_stealth_headers()['User-Agent']
         print(f"{Colors.YELLOW}    [Stealth] Log exfiltrated using UA: {ua[:30]}...{Colors.RESET}")
 
