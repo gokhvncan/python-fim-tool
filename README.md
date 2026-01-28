@@ -19,3 +19,30 @@
    ```bash
    git clone [https://github.com/gokhvncan/python-fim-tool.git](https://github.com/gokhvncan/python-fim-tool.git)
    cd python-fim-tool
+
+Install Dependencies
+
+Bash
+pip install -r requirements.txt
+Configuration Open fim_tool.py and update:
+
+EMAIL_SENDER / EMAIL_PASSWORD
+
+VIRUSTOTAL_API_KEY
+
+Run the Tool
+
+Bash
+python fim_tool.py
+📂 Project Structure
+Plaintext
+python-fim-tool/
+├── baselines/          # Stored hash databases
+├── fim_tool.py         # Main script (Stealth Module Included)
+├── requirements.txt    # Dependencies
+├── security_events.log # Logs
+└── README.md           # Documentation
+⚠️ Legal Disclaimer
+This tool is developed for educational, Red Team simulations, and defensive (Blue Team) purposes only.
+
+Developed by Gökhan Can
